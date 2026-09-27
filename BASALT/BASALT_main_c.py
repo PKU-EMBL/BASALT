@@ -29,7 +29,7 @@ from S9_Reassembly_checkm import *
 from S9p_Hybrid_Reassembly_checkm import *
 from S10_OLC_new_checkm import *
 from glob import glob
-from basalt_runtime import require_model_directory
+from basalt_runtime import read_checkpoint_step, require_model_directory
 
 
 def BASALT_main_c(assembly_list, datasets, num_threads, lr_list, hifi_list,
@@ -50,23 +50,8 @@ def BASALT_main_c(assembly_list, datasets, num_threads, lr_list, hifi_list,
     #### Program start
     last_step=0
     if continue_mode == 'last':
-        try:
-            n=0
-            for line in open('Basalt_checkpoint.txt', 'r'):
-                n+=1
-
-            n1=0
-            for line in open('Basalt_checkpoint.txt', 'r'):
-                n1+=1
-                if n1 == n:
-                    ls=str(line)[0]
-                    try:
-                        ls2=int(str(line)[1])
-                        last_step=int(str(ls)+str(ls2))
-                    except:
-                        last_step=int(ls)
-                    # last_step=int(str(line).replace('th','').replace('st','').replace('nd','').replace('rd','').split(' ')[0])
-        except:
+        last_step=read_checkpoint_step('Basalt_checkpoint.txt')
+        if not os.path.exists('Basalt_checkpoint.txt'):
             f_cp_m=open('Basalt_checkpoint.txt', 'w')
             f_cp_m.close()
     else:

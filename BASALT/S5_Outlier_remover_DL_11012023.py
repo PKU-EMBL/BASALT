@@ -13,6 +13,7 @@ from Bio import SeqIO
 import os, copy, math, glob, gc
 import numpy as np
 from multiprocessing import Pool
+from basalt_runtime import coerce_count, depth_sample_count
 
 
 def TNF_coverage_matrix(bin_contigs, bin_id, contigs_depth, ccc,
@@ -490,7 +491,7 @@ def outlier_predictor(depth_TNF_matrix, contigs_depth, bin_contigs,
     for line in open('Re-mapped_depth.txt','r'):
         n+=1
         if n == 1:
-            num=str(line).strip().count('sorted.bam-var')
+            num=depth_sample_count(line)
             # nx=int(int(num)/2)
         else:
             contig_id=str(line).strip().split('\t')[0]
@@ -596,7 +597,7 @@ def checkm_eval(bin_contigs, bin_folder, confirmed_outlier, pwd, num_threads):
             refined_checkm[str(binID)]={}
             refined_checkm[str(binID)]['N50']=int(N50)
             refined_checkm[str(binID)]['Completeness']=float(completeness)
-            refined_checkm[str(binID)]['Genome size']=int(genome_size)
+            refined_checkm[str(binID)]['Genome size']=coerce_count(genome_size)
             refined_checkm[str(binID)]['Contamination']=float(contamination)
     
     os.chdir(pwd+'/'+str(bin_folder))
@@ -613,7 +614,7 @@ def checkm_eval(bin_contigs, bin_folder, confirmed_outlier, pwd, num_threads):
                             completeness=float(str(line).strip().split('\t')[2].strip())
                             contamination=float(str(line).strip().split('\t')[3].strip())
                             N50=float(str(line).strip().split('\t')[4].strip())
-                            genome_size=int(str(line).strip().split('\t')[1].strip())
+                            genome_size=coerce_count(str(line).strip().split('\t')[1].strip())
                             qua=float(completeness)-5*float(contamination)
 
                             refined_qua=refined_checkm[str(binID)]['Completeness']-5*refined_checkm[str(binID)]['Contamination']

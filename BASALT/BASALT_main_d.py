@@ -29,13 +29,13 @@ from S9p_Hybrid_Reassembly_10262023 import *
 from S10_OLC_new_10262023 import *
 from glob import glob
 from Cleanup import *
-from basalt_runtime import require_model_directory
+from basalt_runtime import pe_read_names, read_checkpoint_step, require_model_directory
 
 
 def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
                   hic_list, eb_list, ram, continue_mode, functional_module,
                   sensitive, refinement_paramter, max_ctn, min_cpn,
-                  pwd, QC_software, output_folder):
+                  pwd, QC_software, output_folder, external_route=False):
     """
     Run the default BASALT pipeline using CheckM2-based quality checks.
 
@@ -50,25 +50,13 @@ def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
     #### Program start
     last_step=0
     if continue_mode == 'last':
-        try:
-            n=0
-            for line in open('Basalt_checkpoint.txt', 'r'):
-                n+=1
-
-            n1=0
-            for line in open('Basalt_checkpoint.txt', 'r'):
-                n1+=1
-                if n1 == n:
-                    ls=str(line)[0]
-                    try:
-                        ls2=int(str(line)[1])
-                        last_step=int(str(ls)+str(ls2))
-                    except:
-                        last_step=int(ls)
-                    # last_step=int(str(line).replace('th','').replace('st','').replace('nd','').replace('rd','').split(' ')[0])
-        except:
+        last_step=read_checkpoint_step('Basalt_checkpoint.txt')
+        if not os.path.exists('Basalt_checkpoint.txt'):
             f_cp_m=open('Basalt_checkpoint.txt', 'w')
             f_cp_m.close()
+    elif external_route:
+        print('External binset route: source assemblies and coverage files are retained')
+        last_step=read_checkpoint_step('Basalt_checkpoint.txt')
     else:
         print('Start a new project')
         cleanup(assembly_list)
@@ -255,7 +243,7 @@ def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
             assembly_list.append(f_d)
 
     ### Autobinner
-    if functional_module == 'autobinning' or functional_module == 'all':
+    if (not external_route) and (functional_module == 'autobinning' or functional_module == 'all'):
         if last_step == 0:
             print('----------------------------------')
             print('Running autobinner')
@@ -440,9 +428,7 @@ def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
                 # multiple_assembly_comparitor_main(assembly_mo_list, bestbinset_list, coverage_matrix_list, num_threads)
                 datasets_fq={}
                 for item in datasets.keys():
-                    datasets_fq[item]=[]
-                    datasets_fq[item].append('PE_r1_'+str(datasets[item][0]))
-                    datasets_fq[item].append('PE_r2_'+str(datasets[item][1]))
+                    datasets_fq[item]=pe_read_names(datasets[item])
                 multiple_assembly_comparitor_main(assembly_mo_list, bestbinset_list, coverage_matrix_list, datasets_fq, 'initial_drep', num_threads)
 
                 f_cp_m=open('Basalt_checkpoint.txt', 'a')
@@ -454,7 +440,10 @@ def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
                 f_cp_m.write('\n'+'3rd bin selection did not perform, because there is only one assembly!')
                 f_cp_m.close()
 
-    if functional_module == 'refinement' or functional_module == 'all':
+    run_refinement = functional_module == 'refinement' or functional_module == 'all'
+    if external_route and functional_module == 'reassembly' and last_step < 7:
+        run_refinement = True
+    if run_refinement:
         if last_step < 4:
             print('Starting outlier removal process')
             coverage_matrix_list, connections_list, assembly_mo_list, bestbinset_list = [], [], [], []
@@ -468,8 +457,12 @@ def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
             for item in assembly_list:
                 connections_list.append('condense_connections_'+item+'.txt')
             if len(bestbinset_list) == 1:
-                print('Copying '+str(bestbinset_list[0])+' to BestBinset')
-                os.system('cp -r '+str(bestbinset_list[0])+' BestBinset')
+                source_binset=str(bestbinset_list[0])
+                if os.path.isdir('BestBinset') or os.path.abspath(source_binset) == os.path.abspath('BestBinset'):
+                    print('Using existing BestBinset')
+                else:
+                    print('Copying '+source_binset+' to BestBinset')
+                    os.system('cp -r '+source_binset+' BestBinset')
             # contig_outlier_remover_main('BestBinset', coverage_matrix_list, connections_list, num_threads, ram)
             # outlier_remover_main('BestBinset', coverage_matrix_list, datasets, assembly_mo_list, pwd, num_threads)
             # lr_list2=copy.deepcopy(lr_list)
@@ -569,9 +562,7 @@ def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
 
                 datasets_fq={}
                 for item in datasets.keys():
-                    datasets_fq[item]=[]
-                    datasets_fq[item].append('PE_r1_'+str(datasets[item][0]))
-                    datasets_fq[item].append('PE_r2_'+str(datasets[item][1]))
+                    datasets_fq[item]=pe_read_names(datasets[item])
 
                 # multiple_assembly_comparitor_main(drep_list, bestbinset_list, coverage_matrix_list, datasets_fq, 'second_drep', num_threads)
                 # final_binset_comparitor('BestBinset_outlier_refined_filtrated_retrieved', coverage_matrix_list, datasets_fq, num_threads, pwd, 'second_drep')
@@ -743,9 +734,7 @@ def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
 
                 datasets_list={}
                 for ds in datasets.keys():
-                    datasets_list[ds]=[]
-                    datasets_list[ds].append('PE_r1_'+str(datasets[ds][0]))
-                    datasets_list[ds].append('PE_r2_'+str(datasets[ds][1]))
+                    datasets_list[ds]=pe_read_names(datasets[ds])
                 
                 if len(lr_list) == 0:
                     hybri_reassembly='n'
@@ -962,10 +951,14 @@ def BASALT_main_d(assembly_list, datasets, num_threads, lr_list, hifi_list,
         f_cp_m.write('\n'+'BASALT done!')
         f_cp_m.close()
     print('BASALT main program accomplished!')
-    print('BASALT will continue to cleanup or compress all the temp files. The results could be found in folder \'Final_bestbinset\'. Please wait for a little bit longer')
+    if external_route:
+        print('External-binset route retained source assemblies, reads, coverage, and connection files.')
+        print('Refinement products keep the BestBinset_* names. Gap-filling output is in '+str(output_folder)+' when reassembly was requested.')
+    else:
+        print('BASALT will continue to cleanup or compress all the temp files. The results could be found in folder \'Final_bestbinset\'. Please wait for a little bit longer')
 
     ### Cleanup
-    if functional_module == 'all':
+    if functional_module == 'all' and not external_route:
         os.system('rm *.njs *.ndb *.nto *.ntf *.not *.nos')
         os.mkdir('Coverage_depth_connection_SimilarBin_files_backup')
         os.system('mv *.depth.txt Coverage_matrix_* Combat_* condense_connections_* Connections_* Similar_bins.txt Coverage_depth_connection_SimilarBin_files_backup')

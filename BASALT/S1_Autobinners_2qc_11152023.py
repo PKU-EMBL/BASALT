@@ -11,10 +11,11 @@ and PE-based contig connection files.
 
 from lib2to3.fixes import fix_buffer
 from Bio import SeqIO
-import sys, os, time, gc
+import sys, os, shlex, time, gc
 from collections import Counter
 from multiprocessing import Pool
 import shutil
+from basalt_runtime import bundled_executable
 
 def fq2fa_conversion(filename):
     """
@@ -597,7 +598,7 @@ def mapping(assembly, group, datasets, num_threads, pwd):
         os.system('bowtie2 -p '+str(num_threads)+' -x '+str(group)+'_'+assembly+' -1 '+str(datasets[str(i)][0])+' -2 '+str(datasets[str(i)][1])+' -S '+str(group)+'_DNA-'+str(i)+'.sam -q --no-unal')
         logfile.write(str('Command: samtools view -b -S '+str(group)+'_DNA-'+str(i)+'.sam -o '+str(group)+'_DNA-'+str(i)+'.bam')+'\n')
         os.system('samtools view -@ '+str(num_threads)+' -b -S '+str(group)+'_DNA-'+str(i)+'.sam -o '+str(group)+'_DNA-'+str(i)+'.bam')
-        os.system('Cytoscapeviz.pl -i '+str(group)+'_DNA-'+str(i)+'.sam -f 2 -a 150 -e 500 -m 3000 -c')
+        os.system('perl '+shlex.quote(bundled_executable('Cytoscapeviz.pl', __file__))+' -i '+shlex.quote(str(group)+'_DNA-'+str(i)+'.sam')+' -f 2 -a 150 -e 500 -m 3000 -c')
         os.system('mv condensed.cytoscape.connections.tab condensed.cytoscape.connections_'+str(group)+'_DNA-'+str(i)+'.tab')
         connections.append('condensed.cytoscape.connections_'+str(group)+'_DNA-'+str(i)+'.tab')
         os.system('rm '+str(group)+'_DNA-'+str(i)+'.sam')

@@ -204,7 +204,29 @@ From the same working directory and unchanged environment:
 BASALT --mode continue
 ```
 
+Checkpoint parsing ignores non-numeric lines, so a trailing `Outlier removal done!` message from an external-binset screening run no longer resets progress to step 0.
+
 Do not resume after changing inputs, code, model files, databases, or major dependency versions. Start a new run directory instead.
+
+### Can gap filling (rOLC and reassembly) run on an external binset fed through `-d`/`-b`/`-r`?
+
+Yes. The three-stage route is: `-d` for data feeding, `-b` for dereplication, then `-r BestBinset --module all` (or `--module reassembly`) from the same working directory. Without `--module`, `-r` still performs outlier screening only and prints the follow-up command. `--module reassembly` finishes any refinement stages the checkpoint has not reached before OLC and reassembly. The same dispatch is used for CheckM2 (`-q checkm2`, default) and legacy CheckM. BASALT-Air is a separate codebase; check its own repository for its current behaviour.
+
+Requirements for the `-r --module` route:
+
+- run from the data-feeding output directory with `condense_connections_*.txt`, coverage matrices, and `PE_r1_*`/`PE_r2_*` reads present;
+- for multiple assemblies, complete `-b` first so `BestBinset_comparison_files/` exists;
+- unchanged contig identifiers and matching list order across `-a`, `-b`, `-c`, and `-r`.
+
+### A wall-time kill interrupted the OLC / bin-merging stage (step 8). Is the state safe to resume?
+
+The OLC workers now discard partial per-bin products (`*_merged`, `blast_*self_merged*`, per-bin `*_checkm`, `Merged_seqs_*`) when a bin restarts, and an empty FASTA in a `*_OLC` result folder is no longer counted as finished work, so `--mode continue` rebuilds instead of re-evaluating the same candidate set indefinitely. If a legacy run still loops after resume, remove the stale step-8 intermediates by hand and resume again.
+
+### The OLC stage uses only a fraction of my cores
+
+Stage 8 and stage 10 now size their worker pool from `-t` and give each worker a share of the thread budget instead of issuing single-threaded `blastn` and one-thread CheckM2 calls. Report the worker/thread split printed at stage start (`OLC workers: N; threads per worker: M`) together with `-t` when comparing performance between releases.
+
+CheckM2 evaluations inside the merge loops are additionally cached by sequence content in `Checkm2_metrics_cache.tsv`. Unchanged candidates — including the original target bin recopied into every merge batch and candidates recurring across convergence iterations — are reused without re-annotation, and only new content is evaluated in one batched multi-threaded `checkm2 predict` call (progress lines read `CheckM2 cache: X/Y candidate(s) reused, Z evaluated`). The cache resets on `--mode new` and invalidates itself when the CheckM2 version or `CHECKM2DB` database changes; after swapping the database manually, remove the file or start a new run. If the batched prediction fails, BASALT falls back to the historical direct per-folder prediction.
 
 ### The run is too slow or uses too much storage
 

@@ -17,6 +17,7 @@ def cleanup(assembly_list):
         List of assemblies. Currently unused but kept for API compatibility.
     """
     os.system('rm *.njs *.ndb *.nto *.ntf *.not *.nos')
+    os.system('rm -f Checkm2_metrics_cache.tsv')
     os.mkdir('Coverage_depth_connection_SimilarBin_files_backup')
     os.system(
         'mv *.depth.txt Coverage_matrix_* Combat_* condense_connections_* '

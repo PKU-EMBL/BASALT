@@ -14,6 +14,7 @@ import sys, os, threading, copy
 from multiprocessing import Pool
 from collections import Counter
 from time import ctime,sleep
+from basalt_runtime import depth_sample_count
 
 
 def seq_recorder(bin_folder, pwd):
@@ -163,7 +164,7 @@ def depth_eval(file_seqs_record, depth_file, pair_bins, bin_folder):
     for line in open(depth_file,'r'):
         n+=1
         if n == 1:
-            num=str(line).strip().count('.bam-var')
+            num=depth_sample_count(line)
         else:
             contig=str(line).strip().split('\t')[0]
             depth_matrix[contig]=[]

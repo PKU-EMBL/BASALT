@@ -59,8 +59,8 @@ parser.add_argument('--max-ctn', type=percentage, dest='Max_contamination', defa
                     help='Max contamination of kept bins (default: 20)')
 parser.add_argument('--mode', choices=('new', 'continue'), dest='running_mode', default='continue',
                     help='Start a new project (new) or continue to run (continue). e.g. --mode continue / --mode new')
-parser.add_argument('--module', choices=('autobinning', 'refinement', 'reassembly', 'all'), dest='functional_module', default='all',
-                    help='Modules for binning. Four modules: 1. autobinning; 2. refinement; 3. reassembly; 4. all. Default will run all modules. But you could set the only perform modle. e.g. --module reassembly. In the module, ')
+parser.add_argument('--module', choices=('autobinning', 'refinement', 'reassembly', 'all'), dest='functional_module', default=None,
+                    help='Pipeline section: autobinning, refinement, reassembly, or all. A normal run defaults to all. With -r, omitting --module keeps standalone outlier screening. Pass --module refinement, reassembly, or all to continue an external binset through contig retrieval, secondary dereplication, rOLC, and reassembly. --module reassembly finishes any missing refinement stages first.')
 # parser.add_argument('--autopara', type=str, dest='autobining_parameters', default='more-sensitive',
 #                     help='Three parameters to chose: 1. more-sensitive; 2. sensitive; 3. quick. Default: more-sensitive. e.g. --autopara sensitive')
 parser.add_argument('--refinepara', choices=('quick', 'deep'), dest='refinement_paramter', default='quick',
@@ -84,7 +84,7 @@ parser.add_argument('--binset-index', type=positive_integer, dest='extra_binset_
 # parser.add_argument('--only-refinement', action='store_true', dest='only_refinement',
 #                     help='Only carry out refinement, e.g.: --only-refinement')
 parser.add_argument('-r', '--refinement-binset', type=str, dest='refinement_binset', default='',
-                    help='Specify binset folder name for refinement e.g.: -r Human_gut_microbime_MAGs')
+                    help='Existing binset folder. Without --module, runs outlier screening only and writes a resumable checkpoint. With --module refinement, reassembly, or all, continues through gap filling. Example: -r BestBinset --module all')
 parser.add_argument('-c', '--coverage-list', type=str, dest='coverage_list',
                     help='List of depth file for refinement. Coverage file(s) could be generated from data feeding modole. e.g.: -c Coverage_matrix_for_binning_1_assembly.fa.txt,Coverage_matrix_for_binning_2_assembly.fa.txt')
 parser.add_argument('-b', '--binsets-list', type=str, dest='binsets_list',
@@ -103,7 +103,8 @@ extrabinner=args.extra_binner
 min_cpn=args.Min_completeness
 max_ctn=args.Max_contamination
 continue_mode=args.running_mode
-functional_module=args.functional_module
+module_explicit=args.functional_module is not None
+functional_module=args.functional_module or 'all'
 # autobining_parameters=args.autobining_parameters
 refinement_paramter=args.refinement_paramter
 output_folder=args.output_folder_name
@@ -168,7 +169,10 @@ print('Binning sensitivity:', str(sensitivity))
 print('Processing with:', str(num_threads), 'threads')
 print('Processing with:', str(ram), 'G')
 print('Running status:', str(continue_mode))
-print('Binning module:', str(functional_module))
+if refinement_binset and not module_explicit:
+    print('Binning module: outlier-only (pass --module all for gap filling)')
+else:
+    print('Binning module:', str(functional_module))
 print('Min completeness:', str(min_cpn))
 print('Max contamination:', str(max_ctn))
 # print('Autobinning parameter:', str(autobining_parameters))
@@ -183,6 +187,88 @@ print('Binset(s) list:', str(binsets_list))
 # Normalized continue mode used across downstream modules
 if continue_mode == 'continue':
     continue_mode = 'last'
+
+def dispatch_external_refinement():
+    """Run outlier screening, or the checkpointed refinement/gap-filling route.
+
+    Omitting ``--module`` preserves the historical outlier-only ``-r`` command.
+    An explicit refinement, reassembly, or all module prepares the state files
+    expected after autobinning and enters the same stages as a full run,
+    without regenerating candidates. CheckM2 and legacy CheckM both use this
+    dispatch. BASALT-Air is a separate codebase and is not invoked here.
+    """
+    from external_workflow import (
+        OUTLIER_ONLY_NOTICE,
+        ExternalBinsetError,
+        external_module_plan,
+        prepare_external_binset_route,
+    )
+    from basalt_runtime import append_checkpoint
+
+    try:
+        plan = external_module_plan(module_explicit, functional_module)
+    except ValueError as exc:
+        parser.error(str(exc))
+
+    if plan == 'outlier':
+        if QC_software == 'checkm2':
+            from S5_Outlier_remover_DL_11012023 import outlier_remover_main
+            outlier_remover_main(
+                refinement_binset, coverage_list, datasets, lr_list, hifi_list,
+                assembly_list, pwd, num_threads
+            )
+        else:
+            from S5_Outlier_remover_DL_checkm import outlier_remover_main
+            outlier_remover_main(
+                refinement_binset, coverage_list, datasets, assembly_list,
+                pwd, num_threads
+            )
+        append_checkpoint('Basalt_checkpoint.txt', '4th outlier removal done!')
+        print(OUTLIER_ONLY_NOTICE)
+        return
+
+    try:
+        state = prepare_external_binset_route(
+            refinement_binset, assembly_list, coverage_list, functional_module,
+            'new' if args.running_mode == 'new' else 'continue', pwd
+        )
+    except ExternalBinsetError as exc:
+        parser.error(str(exc))
+
+    print(
+        'External binset route: '
+        + state['plan']
+        + ', resuming after checkpoint step '
+        + str(state['checkpoint_step'])
+    )
+    orchestrator_module = state['orchestrator_module']
+    if QC_software == 'checkm2':
+        from BASALT_main_d import BASALT_main_d
+        BASALT_main_d(
+            assembly_list, datasets, num_threads, lr_list, hifi_list,
+            hic_list, eb_list, ram, 'last', orchestrator_module,
+            sensitivity, refinement_paramter, max_ctn, min_cpn, pwd,
+            QC_software, output_folder, external_route=True
+        )
+        return
+
+    if state['checkpoint_step'] < 7:
+        from BASALT_main_c_refinement import BASALT_main_c_refinement
+        BASALT_main_c_refinement(
+            assembly_list, datasets, num_threads, lr_list, hifi_list,
+            hic_list, eb_list, ram, 'last', orchestrator_module,
+            sensitivity, refinement_paramter, max_ctn, min_cpn, pwd,
+            QC_software, output_folder
+        )
+    if orchestrator_module == 'all':
+        from BASALT_main_c_re_assembly import BASALT_main_c_re_assembly
+        BASALT_main_c_re_assembly(
+            assembly_list, datasets, num_threads, lr_list, hifi_list,
+            hic_list, eb_list, ram, 'last', orchestrator_module,
+            sensitivity, refinement_paramter, max_ctn, min_cpn, pwd,
+            QC_software, output_folder
+        )
+
 
 def main():
     """
@@ -249,18 +335,15 @@ def main():
 
         elif len(binsets_list) != 0:
             from S4_Multiple_Assembly_Comparitor_multiple_processes_bwt_10242023 import multiple_assembly_comparitor_main
+            from external_workflow import DEREPLICATION_NOTICE
             step='initial_drep'
             # coverage_list: Coverage matrix
             # dataset: OK with both PE dataset or original datasets
+            print(DEREPLICATION_NOTICE)
             multiple_assembly_comparitor_main(assembly_list, binsets_list, coverage_list, datasets, step, num_threads)
 
         elif refinement_binset != '':
-            pwd=os.getcwd()
-            from S5_Outlier_remover_DL_11012023 import outlier_remover_main
-            # coverage_list: Coverage matrix
-            # dataset: OK with both PE dataset or original datasets
-            # assembly_list: data feeded assembly
-            outlier_remover_main(refinement_binset, coverage_list, datasets, lr_list, hifi_list, assembly_list, pwd, num_threads)
+            dispatch_external_refinement()
 
         else:
             pwd = os.getcwd()
@@ -275,18 +358,15 @@ def main():
     else:
         if len(binsets_list) != 0:
             from S4_Multiple_Assembly_Comparitor_multiple_processes_bwt_checkm import multiple_assembly_comparitor_main
+            from external_workflow import DEREPLICATION_NOTICE
             step='initial_drep'
             # coverage_list: Coverage matrix
             # dataset: OK with both PE dataset or original datasets
+            print(DEREPLICATION_NOTICE)
             multiple_assembly_comparitor_main(assembly_list, binsets_list, coverage_list, datasets, step, num_threads)
 
         elif refinement_binset != '':
-            pwd=os.getcwd()
-            from S5_Outlier_remover_DL_checkm import outlier_remover_main
-            # coverage_list: Coverage matrix
-            # dataset: OK with both PE dataset or original datasets
-            # assembly_list: data feeded assembly
-            outlier_remover_main(refinement_binset, coverage_list, datasets, assembly_list, pwd, num_threads)
+            dispatch_external_refinement()
 
         else:
             if len(assembly_list) != 0:

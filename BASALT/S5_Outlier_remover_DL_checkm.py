@@ -12,6 +12,7 @@ from Bio import SeqIO
 import os, copy, math, glob, gc
 import numpy as np
 from multiprocessing import Pool
+from basalt_runtime import depth_sample_count
 
 def TNF_coverage_matrix(bin_contigs, bin_id, contigs_depth, ccc, contigs_kmer, contigs_kmer2):
     fout=open(str(bin_id)+'_contig_depth_TNF_matrix.txt','a')
@@ -311,7 +312,7 @@ def outlier_predictor(depth_TNF_matrix, contigs_depth, bin_contigs, datasets, nu
     for line in open('Re-mapped_depth.txt','r'):
         n+=1
         if n == 1:
-            num=str(line).strip().count('sorted.bam-var')
+            num=depth_sample_count(line)
             # nx=int(int(num)/2)
         else:
             contig_id=str(line).strip().split('\t')[0]

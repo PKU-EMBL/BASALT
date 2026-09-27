@@ -15,6 +15,7 @@ import sys, os, threading, glob
 from multiprocessing import Pool
 from collections import Counter
 from time import ctime,sleep
+from basalt_runtime import depth_sample_count
 
 
 def intervalue(Xmin, Xmax, Y, Z):
@@ -152,7 +153,7 @@ def CoverageMatrix(depth_file, assembly_name):
     for line in open(str(depth_file), 'r'):
         n+=1
         if n == 1:
-            num_cov_groups=int(str(line).strip().count(".bam-var"))+2
+            num_cov_groups=depth_sample_count(line)+2
             title['Name']='Length'+'\t'+'totalCoverage'+'\t'+'avgCoverage'
             for i in range(2, num_cov_groups):
                 m=title['Name']

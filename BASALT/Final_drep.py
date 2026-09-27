@@ -13,6 +13,7 @@ from multiprocessing import Pool
 import pandas as pd
 import numpy as np
 from sklearn.decomposition import PCA
+from basalt_runtime import depth_sample_count
 
 def Contigs_aligner(Contigs_assembly1, num_threads):
     print('Using BLAST to align '+Contigs_assembly1+' to '+Contigs_assembly1)
@@ -1196,7 +1197,7 @@ def final_iteration_mapping(contigs, datasets, num_threads, pwd):
     for line in open(str(contigs)+'.depth.txt','r'):
         n+=1
         if n == 1:
-            coverage_num=int(str(line).count('bam-var'))
+            coverage_num=depth_sample_count(line)
         else:
             bin_id=str(line).strip().split('\t')[0].split('|')[0].strip()
             contig_id_t=str(line).strip().split('\t')[0]
@@ -1282,7 +1283,7 @@ def mapping(bin, datasets, num_threads, pwd):
     for line in open(str(bin)+'.depth.txt','r'):
         n+=1
         if n == 1:
-            coverage_num=int(str(line).count('bam-var'))
+            coverage_num=depth_sample_count(line)
         else:
             contig_id=str(line).strip().split('\t')[0]
             bin_contigs_depth[contig_id]={}

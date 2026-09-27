@@ -41,7 +41,7 @@ Read [Input formats and paths](inputs.md) for filename, compression, and sample-
 | `--min-cpn` | `35` | integer percentage | Minimum estimated completeness for bins entering refinement |
 | `--max-ctn` | `20` | integer percentage | Maximum estimated contamination for bins entering refinement |
 | `--mode` | `continue` | `new`, `continue` | Initialize or resume checkpoint state |
-| `--module` | `all` | `autobinning`, `refinement`, `reassembly`, `all` | Requested pipeline section |
+| `--module` | `all` (normal runs) | `autobinning`, `refinement`, `reassembly`, `all` | Requested pipeline section. With `-r`, omitting `--module` keeps standalone outlier screening; `--module reassembly` finishes missing refinement stages first |
 | `--sensitive` | `sensitive` | `quick`, `sensitive`, `more-sensitive` | Candidate-generation preset |
 | `--refinepara` | `quick` | `quick`, `deep` | Contig-retrieval depth |
 | `-e`, `--extra_binner` | none | `m`, `v`, `l` | Optional MetaBinner, VAMB, or LorBin adapter; combine with commas |
@@ -58,7 +58,7 @@ In the current CheckM2 workflow, the final directory is the value supplied to `-
 |---|---:|---|
 | `-d`, `--data-feeding-folder` | none | Comma-separated external binset directories for data feeding |
 | `--binset-index` | `500` | Starting index assigned to imported binsets |
-| `-r`, `--refinement-binset` | empty | Existing binset for standalone outlier screening |
+| `-r`, `--refinement-binset` | empty | Existing binset for outlier screening, or with `--module` for refinement and gap filling |
 | `-c`, `--coverage-list` | none | Comma-separated compatible coverage matrices |
 | `-b`, `--binsets-list` | none | Comma-separated existing binsets for dereplication |
 
@@ -173,7 +173,7 @@ BASALT \
   -q checkm2
 ```
 
-The supplied assembly, reads, bin contig identifiers, and coverage matrix must be mutually compatible.
+The supplied assembly, reads, bin contig identifiers, and coverage matrix must be mutually compatible. This command writes a numeric `4th` checkpoint entry. Without `--module`, the route stops after outlier removal and prints the follow-up command; it does not run gap filling. Use the same command plus `--module refinement`, `--module reassembly`, or `--module all` to continue.
 
 ## External binsets: staged workflow
 
@@ -208,7 +208,9 @@ BASALT \
 
 The dereplication route writes `BestBinset/`. Confirm the exact data-feeding basenames instead of copying this example literally; imported directory names determine part of the filename.
 
-### 3. Refine the selected binset
+### 3. Refine the selected binset and fill gaps
+
+Outlier screening only (historical default):
 
 ```bash
 BASALT \
@@ -220,7 +222,25 @@ BASALT \
   -q checkm2
 ```
 
-The standalone outlier-screening route writes `<input-binset>_outlier_refined/`, here `BestBinset_outlier_refined/`.
+Continue into the checkpointed refinement and gap-filling stages (contig retrieval, secondary dereplication, rOLC, reassembly) by adding `--module`:
+
+```bash
+BASALT \
+  -r BestBinset \
+  --module all \
+  -c Coverage_matrix_for_binning_500_binner_A_bins.fa.txt,Coverage_matrix_for_binning_501_binner_B_bins.fa.txt \
+  -a 500_binner_A_bins.fa,501_binner_B_bins.fa \
+  -s PE_r1_sample_1_R1.fastq,PE_r2_sample_1_R2.fastq/PE_r1_sample_2_R1.fastq,PE_r2_sample_2_R2.fastq \
+  -t 32 -m 128 \
+  -q checkm2 \
+  -o imported_final
+```
+
+`--module reassembly` and `--module all` both run the gap-filling module for an external binset; `reassembly` first finishes any refinement stages the checkpoint has not reached. `--module refinement` stops after refinement. `--module autobinning` is rejected for `-r` because the bins already exist.
+
+This route resumes through `Basalt_checkpoint.txt`: it writes the stage-list files normally produced by autobinning, records step 3, and detects an existing `BestBinset_outlier_refined/` as step 4, so an outlier-only run can be continued without rerunning screening. Run it from the same working directory that holds the data-feeding outputs (`condense_connections_*.txt`, coverage matrices, `PE_r1_*`/`PE_r2_*` reads, and `BestBinset_comparison_files/` from `-b` when there are multiple assemblies). The final directory is the value of `-o`; source inputs are not removed by cleanup on this route.
+
+The standalone outlier-screening route writes `<input-binset>_outlier_refined/`, here `BestBinset_outlier_refined/`. The `-b` route performs dereplication only; continue with `-r BestBinset --module all` afterwards.
 
 :::{warning}
 This is an expert route, not a substitute for a normal full run. Assembly FASTA files, renamed contig identifiers, binsets, coverage matrices, and paired-end files must remain mutually compatible and in matching list order. Pilot the complete sequence and inspect logs and outputs before applying it at scale.

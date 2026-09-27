@@ -12,8 +12,10 @@ dereplication and refinement modules.
 from Bio import SeqIO
 import sys
 import os
+import shlex
 import time
 from collections import Counter
+from basalt_runtime import bundled_executable, coerce_count, depth_sample_count
 
 def merge_bin(binset_folder, bs_id, pwd):
     bins_checkm={}
@@ -214,7 +216,7 @@ def parse_checkm(checkm_containing_folder, pwd):
 
                     try:
                         genome_size=str(line).strip().split('\'Genome size\':')[1].strip().split(', ')[0]
-                        bins_checkm[genome_ids]['Genome size']=int(genome_size)
+                        bins_checkm[genome_ids]['Genome size']=coerce_count(genome_size)
                     except:
                         bins_checkm[genome_ids]['Genome size']=0
 
@@ -237,7 +239,8 @@ def mapping(assembly, group, datasets, num_threads, pwd):
         print('Mapping '+str(assembly)+' with dataset '+str(i))
         os.system('bowtie2 -p '+str(num_threads)+' -x '+assembly+' -1 '+str(datasets[str(i)][0])+' -2 '+str(datasets[str(i)][1])+' -S '+str(group)+'_DNA-'+str(i)+'.sam -q --no-unal')
         os.system('samtools view -@ '+str(num_threads)+' -b -S '+str(group)+'_DNA-'+str(i)+'.sam -o '+str(group)+'_DNA-'+str(i)+'.bam')
-        os.system('perl Cytoscapeviz.pl -i '+str(group)+'_DNA-'+str(i)+'.sam -f 2 -a 150 -e 500 -m 3000 -c')
+        cytoscape=bundled_executable('Cytoscapeviz.pl', __file__)
+        os.system('perl '+shlex.quote(cytoscape)+' -i '+shlex.quote(str(group)+'_DNA-'+str(i)+'.sam')+' -f 2 -a 150 -e 500 -m 3000 -c')
         # PE_tracker(str(group)+'_DNA-'+str(i)+'.sam', 'condensed.cytoscape.connections_'+str(group)+'_DNA-'+str(i)+'.tab')
         os.system('mv condensed.cytoscape.connections.tab condensed.cytoscape.connections_'+str(group)+'_DNA-'+str(i)+'.tab')
         connections.append('condensed.cytoscape.connections_'+str(group)+'_DNA-'+str(i)+'.tab')
@@ -273,7 +276,7 @@ def mapping(assembly, group, datasets, num_threads, pwd):
     for line in open(str(group)+'_assembly.depth.txt', 'r'):
         n+=1
         if n == 1:
-            num_cov_groups=int(str(line).strip().count(".bam-var"))+2
+            num_cov_groups=depth_sample_count(line)+2
             title['Name']='Length'+'\t'+'totalCoverage'+'\t'+'avgCoverage'
             for i in range(2, num_cov_groups):
                 m=title['Name']
@@ -524,7 +527,7 @@ def data_feeding(extra_binset, datasets, start_index, num_threads,
                     checkm[str(binID)]={}
                     checkm[str(binID)]['N50']=int(N50)
                     checkm[str(binID)]['Completeness']=float(completeness)
-                    checkm[str(binID)]['Genome size']=int(genome_size)
+                    checkm[str(binID)]['Genome size']=coerce_count(genome_size)
                     checkm[str(binID)]['Contamination']=float(contamination)
             
             os.chdir(pwd+'/'+str(mod_extra_binset[i]))

@@ -21,6 +21,14 @@ from sklearn.decomposition import PCA
 import numpy as np
 import pandas as pd
 from multiprocessing import Pool
+from basalt_runtime import (
+    clean_stale_olc_intermediates,
+    evaluate_bins_checkm2,
+    expand_alignment_group,
+    fasta_has_sequence,
+    positive_thread_count,
+    worker_thread_budget,
+)
 
 
 def elongate_contig_selector(eliminated_bin, threshold, pwd,
@@ -332,7 +340,7 @@ def blast_1(target_bin, eliminated_bin, target_contig_seq, target_contig_len,
     pwd = os.getcwd()
     os.system('makeblastdb -in '+eliminated_bin+' -dbtype nucl -hash_index -parse_seqids -logfile '+eliminated_bin+'_db.txt')
     # os.system('blastn -query '+target_bin+' -db '+eliminated_bin+' -evalue 1e-20 -num_threads '+str(num_threads)+' -outfmt 6 -out '+str(blast_name))
-    os.system('blastn -query '+target_bin+' -db '+eliminated_bin+' -evalue 1e-20 -num_threads 1 -outfmt 6 -out '+str(blast_name))
+    os.system('blastn -query '+target_bin+' -db '+eliminated_bin+' -evalue 1e-20 -num_threads '+str(positive_thread_count(num_threads))+' -outfmt 6 -out '+str(blast_name))
     os.system('rm *_db.txt')
 
     f=open(str(blast_name)+'_filtration_1.txt','w')
@@ -410,17 +418,9 @@ def blast_1(target_bin, eliminated_bin, target_contig_seq, target_contig_len,
         num2, num1=0, 1
         blast_group[item]={}
         blast_group[item][item]=1
-        while num2 != num1:
-            num1=len(blast_group[item])
-            for alignment in alignment_dict.keys():
-                # for aligned_contig in blast_group[item]:
-                #     if aligned_contig in alignment:
-                query_p=alignment.split(' ')[0]
-                subject_p=alignment.split(' ')[1]
-                if '\''+query_p+'\'' in str(blast_group[item]) or '\''+subject_p+'\'' in str(blast_group[item]):
-                    blast_group[item][query_p]=1
-                    blast_group[item][subject_p]=1
-            num2=len(blast_group[item])
+        blast_group[item], grouping_converged=expand_alignment_group(blast_group[item], alignment_dict)
+        if not grouping_converged:
+            print('Warning: BLAST grouping stopped at the iteration limit for '+str(item))
 
     nr_blast_group={}
     for item in blast_group.keys():
@@ -542,7 +542,7 @@ def elongation_sub_contig(merged_seq, query_seq, iteration_num,
 
 def blast_2(target_bin,target_contig_seq, merged_bin, total_seq, threshold_item, iteration_num, num_threads, folder_name):
     os.system('makeblastdb -in '+str(merged_bin)+' -dbtype nucl -hash_index -parse_seqids -logfile '+str(merged_bin)+'_db.txt')
-    os.system('blastn -query '+str(target_bin)+' -db '+str(merged_bin)+' -evalue 1e-20 -num_threads 1 -outfmt 6 -out blast_'+str(target_bin)+'_self_merged_'+str(threshold_item)+'.txt')
+    os.system('blastn -query '+str(target_bin)+' -db '+str(merged_bin)+' -evalue 1e-20 -num_threads '+str(positive_thread_count(num_threads))+' -outfmt 6 -out blast_'+str(target_bin)+'_self_merged_'+str(threshold_item)+'.txt')
     # os.system('blastn -query '+str(target_bin)+' -db '+str(merged_bin)+' -evalue 1e-20 -num_threads '+str(num_threads)+' -outfmt 6 -out blast_'+str(target_bin)+'_self_merged_'+str(threshold_item)+'.txt')
     os.system('rm *.perf')
 
@@ -1086,6 +1086,7 @@ def OLC_elongation_main(target_bin, eliminated_bin, target_bin_checkm, iteration
     """
     # def OLC_elongation_main(target_bin, eliminated_bin, target_bin_checkm, iteration_num, num, aligned_len_cutoff, similarity_cutoff, num_threads, pwd, eliminated_bin_containing_folder, all_kmer):
     pwd=os.getcwd()
+    clean_stale_olc_intermediates(pwd, target_bin)
     # try:
     merged_bin_recorded={}
     if num == 0:
@@ -1247,9 +1248,12 @@ def OLC_elongation_main(target_bin, eliminated_bin, target_bin_checkm, iteration
                     xt+=1
 
             if xt > 0:
-                os.system('checkm2 predict -t 1 -i '+target_bin+'_merged -x fa -o '+str(target_bin)+'_checkm --force')
-                test_checkm=parse_checkm_2(target_bin+'_checkm')
-                bin_checkm.update(test_checkm)
+                test_checkm=evaluate_bins_checkm2(target_bin+'_merged', num_threads)
+                if test_checkm is None:
+                    os.system('checkm2 predict -t '+str(positive_thread_count(num_threads))+' -i '+target_bin+'_merged -x fa -o '+str(target_bin)+'_checkm --force')
+                    test_checkm=parse_checkm_2(target_bin+'_checkm')
+                if test_checkm:
+                    bin_checkm.update(test_checkm)
     except:
         xxyyzz=0
 
@@ -1713,6 +1717,10 @@ def OLC_main(target_bin_folder, step, bin_comparison_folder,
                     hz=str(file).split('.')[-1]
                     if 'fa' in hz:
                         if 'genomes' in file:
+                            fasta_path=os.path.join(pwd, target_bin_folder+'_OLC', file)
+                            if not fasta_has_sequence(fasta_path):
+                                print('Ignoring incomplete OLC FASTA '+str(file))
+                                continue
                             file_name_qz=str(file).split('_genomes.')[0]
                             file_name_num=str(file).split('_genomes.')[1].split('.')[0]
                             file_name=file_name_qz+'_genomes.'+str(file_name_num)
@@ -1772,16 +1780,22 @@ def OLC_main(target_bin_folder, step, bin_comparison_folder,
     #             contig=str(line).strip().split('\t')[0]
     #             all_kmer[contig]=str(line).strip()
 
+    pending_count=0
+    for item in bestbinset_sim_bin:
+        if item not in accomplished_bins.keys():
+            pending_count+=1
     xyzzz=0
-    if len(bestbinset_sim_bin) >= 5:
-        print('Multiple threads started')
-        pool=Pool(processes=num_threads)
+    if pending_count >= 2:
+        pool_size=min(positive_thread_count(num_threads), pending_count)
+        threads_each=worker_thread_budget(num_threads, pool_size)
+        print('Multiple threads started: '+str(pool_size)+' workers, '+str(threads_each)+' threads each')
+        pool=Pool(processes=pool_size)
         result, remove_bin = {}, {}
         for item in bestbinset_sim_bin:
             if item not in accomplished_bins.keys():
                 print('Processing '+str(item))
                 # result[item]=pool.apply_async(mul_threads, args=(item, bestbinset_sim_bin, bestbinset_checkm, step, pwd, aligned_len_cutoff, similarity_cutoff, mod_bin_folder, target_bin_folder, num_threads, all_kmer))
-                result[item]=pool.apply_async(mul_threads, args=(item, bestbinset_sim_bin, bestbinset_checkm, step, pwd, aligned_len_cutoff, similarity_cutoff, mod_bin_folder, target_bin_folder, num_threads,))
+                result[item]=pool.apply_async(mul_threads, args=(item, bestbinset_sim_bin, bestbinset_checkm, step, pwd, aligned_len_cutoff, similarity_cutoff, mod_bin_folder, target_bin_folder, threads_each,))
                 # total_selected_bin, total_selected_bin_checkm, remove_bin=mul_threads(item, bestbinset_sim_bin, bestbinset_checkm, step, pwd, aligned_len_cutoff, similarity_cutoff, mod_bin_folder, target_bin_folder, num_threads, all_kmer)
         pool.close()
         pool.join()
