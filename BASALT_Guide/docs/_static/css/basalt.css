@@ -1,36 +1,98 @@
+/* ============================================================
+   BASALT documentation — PKU-EMBL Lab design system
+   Brand: PKU crimson on warm paper tones, Josefin Sans + Lato.
+   Matches the laboratory site (EMBL-PKU.github.io).
+   ============================================================ */
+
+/* Self-hosted fonts, Qiu-lab pairing:
+   Josefin Sans (headings) + Lato (body). */
+@font-face {
+  font-family: "Josefin Sans";
+  src: url("../fonts/josefin-sans-var.woff2") format("woff2");
+  font-weight: 100 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lato";
+  src: url("../fonts/lato-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lato";
+  src: url("../fonts/lato-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Lato";
+  src: url("../fonts/lato-900.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- Design tokens ---------- */
 :root {
-  --basalt-ink: #26343a;
-  --basalt-muted: #5c6c73;
-  --basalt-teal: #176f73;
-  --basalt-teal-dark: #0f555a;
-  --basalt-green: #55ad62;
-  --basalt-blue: #7bb9cb;
+  --pku-crimson: #94070a;        /* PKU red */
+  --pku-crimson-dark: #6e0508;
+  --pku-crimson-soft: rgba(148, 7, 10, 0.08);
+
+  --basalt-ink: #2b2520;          /* warm near-black headings */
+  --basalt-muted: #857c70;        /* secondary copy */
+  --basalt-body: #4c453d;         /* warm gray body copy */
+
+  --basalt-paper: #ffffff;
+  --basalt-cream: #faf6ee;        /* warm section background */
+  --basalt-cream-deep: #f2ecdf;
+  --basalt-border: #e6dfd2;       /* warm hairline */
+  --basalt-border-dark: #d8cfc0;
+
   --basalt-gold: #c9a75e;
-  --basalt-surface: #ffffff;
-  --basalt-surface-soft: #f4f8f7;
-  --basalt-border: #dce7e4;
-  --basalt-shadow: 0 14px 38px rgba(28, 67, 68, 0.09);
-  --pst-font-family-base: "Times New Roman", Times, serif;
-  --pst-font-family-heading: "Times New Roman", Times, serif;
+
+  --basalt-shadow: 0 1px 2px rgba(43, 37, 32, 0.05), 0 4px 14px rgba(43, 37, 32, 0.05);
+  --basalt-shadow-lift: 0 2px 4px rgba(43, 37, 32, 0.06), 0 14px 32px rgba(43, 37, 32, 0.12);
+  --basalt-radius: 12px;
+
+  --font-body: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+  --font-heading: "Josefin Sans", "Lato", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+
+  --pst-font-family-base: var(--font-body);
+  --pst-font-family-heading: var(--font-heading);
   --pst-font-family-monospace: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --bs-body-font-family: "Times New Roman", Times, serif;
-  --bs-body-font-size: 1.08rem;
+  --bs-body-font-family: var(--font-body);
+  --bs-body-font-size: 1.02rem;
   --bs-body-line-height: 1.7;
-  --pst-color-primary: var(--basalt-teal);
-  --pst-color-link: var(--basalt-teal);
-  --pst-color-link-hover: var(--basalt-teal-dark);
+  --pst-color-primary: var(--pku-crimson);
+  --pst-color-link: var(--pku-crimson);
+  --pst-color-link-hover: var(--pku-crimson-dark);
 }
 
 html[data-theme="dark"] {
-  --basalt-ink: #e9f0ef;
-  --basalt-muted: #b5c2c0;
-  --basalt-surface: #202a2e;
-  --basalt-surface-soft: #27363a;
-  --basalt-border: #3c4e50;
-  --basalt-shadow: 0 14px 38px rgba(0, 0, 0, 0.22);
-  --pst-color-primary: #79c5c1;
-  --pst-color-link: #7dc9c4;
-  --pst-color-link-hover: #9cddd8;
+  --basalt-ink: #f3ece1;
+  --basalt-muted: #b3a797;
+  --basalt-body: #d8cfc0;
+  --basalt-paper: #26201a;
+  --basalt-cream: #2e2721;
+  --basalt-cream-deep: #352d26;
+  --basalt-border: #4a4038;
+  --basalt-border-dark: #5c5148;
+  --pku-crimson-soft: rgba(226, 122, 124, 0.12);
+  --basalt-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.3);
+  --basalt-shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.35), 0 14px 32px rgba(0, 0, 0, 0.45);
+  --pst-color-primary: #e27a7c;
+  --pst-color-link: #e28a8c;
+  --pst-color-link-hover: #f0a9ab;
 }
 
 html {
@@ -42,12 +104,12 @@ button,
 input,
 select,
 textarea {
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-body);
 }
 
 body {
-  color: var(--basalt-ink);
-  font-size: 1.08rem;
+  color: var(--basalt-body);
+  font-size: 1.02rem;
   line-height: 1.7;
 }
 
@@ -59,10 +121,15 @@ samp,
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
+::selection {
+  color: #ffffff;
+  background: var(--pku-crimson);
+}
+
 /* Sphinx Book shell */
 .bd-header {
   border-bottom: 1px solid var(--basalt-border);
-  box-shadow: none;
+  box-shadow: var(--basalt-shadow);
 }
 
 .bd-main .bd-content .bd-article-container {
@@ -70,13 +137,13 @@ samp,
 }
 
 .bd-article {
-  font-size: 1.1rem;
+  font-size: 1.04rem;
   line-height: 1.72;
 }
 
 .bd-sidebar-primary,
 .bd-sidebar-secondary {
-  font-size: 1rem;
+  font-size: 0.98rem;
   line-height: 1.45;
 }
 
@@ -96,17 +163,19 @@ samp,
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  font-size: 1.1rem;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .navbar-brand.logo img {
   width: 9.4rem;
   max-height: 9.4rem;
-  border: 1px solid var(--basalt-border);
+  border: 1px solid var(--basalt-border-dark);
   border-radius: 50%;
-  box-shadow: 0 8px 25px rgba(35, 87, 88, 0.13);
+  box-shadow: 0 8px 25px var(--pku-crimson-soft);
   object-fit: cover;
 }
 
@@ -114,7 +183,7 @@ samp,
 .bd-toc .nav-link,
 .toc-entry a {
   color: var(--basalt-muted);
-  font-size: 0.98rem;
+  font-size: 0.97rem;
 }
 
 .bd-links .nav-link:hover,
@@ -122,14 +191,19 @@ samp,
 .toc-entry a:hover,
 .bd-links .active > .nav-link,
 .bd-toc .active > .nav-link {
-  color: var(--pst-color-primary);
+  color: var(--pku-crimson);
+}
+
+.bd-links .active > .nav-link {
+  border-left-color: var(--pku-crimson);
 }
 
 .bd-links p.caption {
   color: var(--basalt-ink);
-  font-size: 0.93rem;
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
   font-weight: 700;
-  letter-spacing: 0.045em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
@@ -145,28 +219,28 @@ samp,
 .bd-article h3,
 .bd-article h4 {
   color: var(--basalt-ink);
-  font-family: "Times New Roman", Times, serif;
+  font-family: var(--font-heading);
   font-weight: 700;
 }
 
 .bd-article h1 {
   margin-bottom: 0.75em;
-  font-size: clamp(2.35rem, 4vw, 3.1rem);
-  letter-spacing: -0.035em;
-  line-height: 1.05;
+  font-size: clamp(2.3rem, 4vw, 3rem);
+  letter-spacing: -0.01em;
+  line-height: 1.08;
 }
 
 .bd-article h2 {
   margin-top: 2.15em;
   padding-bottom: 0.28em;
   border-bottom: 1px solid var(--basalt-border);
-  font-size: 1.7rem;
-  letter-spacing: -0.018em;
+  font-size: 1.66rem;
+  letter-spacing: 0;
 }
 
 .bd-article h3 {
   margin-top: 1.65em;
-  font-size: 1.3rem;
+  font-size: 1.28rem;
 }
 
 .bd-article p,
@@ -177,9 +251,14 @@ samp,
 }
 
 .bd-article a {
+  color: var(--pku-crimson);
   font-weight: 600;
   text-decoration-thickness: 0.055em;
   text-underline-offset: 0.15em;
+}
+
+.bd-article a:hover {
+  color: var(--pku-crimson-dark);
 }
 
 .bd-article code.literal {
@@ -194,25 +273,27 @@ samp,
 .bd-article table {
   width: 100%;
   border-color: var(--basalt-border);
-  font-size: 1rem;
+  font-size: 0.99rem;
 }
 
 .bd-article table thead tr {
-  background: var(--basalt-surface-soft);
+  background: var(--basalt-cream);
 }
 
 .bd-article table th {
   color: var(--basalt-ink);
+  font-family: var(--font-heading);
   font-weight: 700;
 }
 
 .bd-article .admonition {
   border-radius: 0.58rem;
   font-size: 1rem;
-  box-shadow: 0 5px 18px rgba(29, 65, 66, 0.05);
+  box-shadow: var(--basalt-shadow);
 }
 
 .bd-article .admonition-title {
+  font-family: var(--font-heading);
   font-size: 1.02rem;
 }
 
@@ -227,12 +308,14 @@ samp,
 .basalt-hero {
   position: relative;
   margin: 0 0 1.6rem;
-  padding: 2.45rem 2.55rem 2rem;
+  padding: 2.5rem 2.6rem 2.05rem;
   overflow: hidden;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--basalt-blue) 19%, var(--basalt-surface)) 0%, var(--basalt-surface) 50%, color-mix(in srgb, var(--basalt-green) 10%, var(--basalt-surface)) 100%);
+  background:
+    radial-gradient(ellipse 60rem 26rem at 85% -12%, var(--pku-crimson-soft), transparent 60%),
+    linear-gradient(160deg, var(--basalt-cream) 0%, var(--basalt-paper) 55%, var(--basalt-cream) 100%);
   border: 1px solid var(--basalt-border);
-  border-radius: 1rem;
-  box-shadow: var(--basalt-shadow);
+  border-radius: var(--basalt-radius);
+  box-shadow: var(--basalt-shadow-lift);
 }
 
 .basalt-hero::before {
@@ -254,17 +337,19 @@ samp,
 
 .basalt-hero__eyebrow {
   margin-bottom: 0;
-  color: var(--basalt-teal);
-  font-size: 0.94rem !important;
+  color: var(--pku-crimson);
+  font-family: var(--font-heading);
+  font-size: 0.92rem !important;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .basalt-hero__tagline {
   max-width: 47rem;
   color: var(--basalt-ink);
-  font-size: 1.3rem !important;
+  font-family: var(--font-heading);
+  font-size: 1.32rem !important;
   font-weight: 600;
   line-height: 1.42;
 }
@@ -272,7 +357,7 @@ samp,
 .basalt-hero__summary {
   max-width: 48rem;
   color: var(--basalt-muted);
-  font-size: 1.06rem !important;
+  font-size: 1.05rem !important;
 }
 
 .basalt-hero__image {
@@ -280,10 +365,10 @@ samp,
   width: 100%;
   margin: 1.05rem 0;
   padding: 0.65rem;
-  background: #ffffff;
+  background: var(--basalt-paper);
   border: 1px solid var(--basalt-border);
   border-radius: 0.72rem;
-  box-shadow: 0 8px 26px rgba(29, 65, 66, 0.08);
+  box-shadow: var(--basalt-shadow);
 }
 
 .basalt-hero__actions,
@@ -300,13 +385,15 @@ samp,
 .basalt-button {
   display: inline-flex;
   min-height: 2.55rem;
-  padding: 0.53rem 1rem;
+  padding: 0.53rem 1.05rem;
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
   border-radius: 0.5rem;
-  font-size: 1rem;
+  font-family: var(--font-heading);
+  font-size: 0.99rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
   text-decoration: none !important;
   transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
 }
@@ -315,25 +402,38 @@ samp,
   transform: translateY(-2px);
 }
 
+.basalt-button:focus-visible {
+  outline: 2px solid var(--pku-crimson);
+  outline-offset: 2px;
+}
+
 .basalt-button--primary {
   color: #ffffff !important;
-  background: var(--basalt-teal);
-  box-shadow: 0 8px 22px rgba(23, 111, 115, 0.22);
+  background: var(--pku-crimson);
+  box-shadow: 0 8px 22px rgba(148, 7, 10, 0.24);
 }
 
 .basalt-button--primary:hover {
-  background: var(--basalt-teal-dark);
+  background: var(--pku-crimson-dark);
 }
 
 .basalt-button--secondary {
-  color: var(--basalt-teal) !important;
-  background: var(--basalt-surface);
-  border-color: color-mix(in srgb, var(--basalt-teal) 35%, var(--basalt-border));
+  color: var(--pku-crimson) !important;
+  background: var(--basalt-paper);
+  border-color: rgba(148, 7, 10, 0.35);
+}
+
+.basalt-button--secondary:hover {
+  background: var(--pku-crimson-soft);
 }
 
 .basalt-button--quiet {
   color: var(--basalt-ink) !important;
-  border-color: var(--basalt-border);
+  border-color: var(--basalt-border-dark);
+}
+
+.basalt-button--quiet:hover {
+  background: var(--basalt-cream);
 }
 
 .basalt-hero__badges {
@@ -342,47 +442,52 @@ samp,
 
 .basalt-hero__badges span,
 .basalt-hero__badges a {
-  padding: 0.22rem 0.58rem;
+  padding: 0.22rem 0.62rem;
   color: var(--basalt-muted);
-  background: color-mix(in srgb, var(--basalt-surface) 82%, transparent);
+  background: color-mix(in srgb, var(--basalt-paper) 82%, transparent);
   border: 1px solid var(--basalt-border);
   border-radius: 999px;
-  font-size: 0.91rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
+}
+
+.basalt-hero__badges a:hover {
+  color: var(--pku-crimson);
+  border-color: rgba(148, 7, 10, 0.35);
 }
 
 .sd-card {
   overflow: hidden;
   border: 1px solid var(--basalt-border) !important;
   border-radius: 0.72rem;
-  box-shadow: 0 6px 20px rgba(29, 65, 66, 0.05) !important;
+  box-shadow: var(--basalt-shadow) !important;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .sd-card::before {
   display: block;
   height: 3px;
-  background: linear-gradient(90deg, var(--basalt-teal), var(--basalt-green), var(--basalt-gold));
+  background: linear-gradient(90deg, var(--pku-crimson), var(--pku-crimson-dark) 55%, var(--basalt-gold));
   content: "";
 }
 
 .sd-card:hover {
-  border-color: var(--basalt-teal) !important;
-  box-shadow: 0 12px 28px rgba(29, 65, 66, 0.1) !important;
+  border-color: rgba(148, 7, 10, 0.4) !important;
+  box-shadow: var(--basalt-shadow-lift) !important;
   transform: translateY(-3px);
 }
 
 .sd-card-title {
   color: var(--basalt-ink);
-  font-family: "Times New Roman", Times, serif;
-  font-size: 1.17rem;
+  font-family: var(--font-heading);
+  font-size: 1.16rem;
   font-weight: 700;
 }
 
 .sd-card-text {
   color: var(--basalt-muted);
-  font-size: 1rem;
+  font-size: 0.99rem;
 }
 
 .basalt-workflow {
@@ -390,7 +495,7 @@ samp,
   width: min(100%, 54rem);
   margin: 1rem auto 1.5rem;
   padding: 0.7rem;
-  background: #ffffff;
+  background: var(--basalt-paper);
   border: 1px solid var(--basalt-border);
   border-radius: 0.75rem;
 }
@@ -402,10 +507,10 @@ samp,
   max-height: 34rem;
   margin: 1rem auto 1.7rem;
   padding: 0.8rem;
-  background: #ffffff;
+  background: var(--basalt-paper);
   border: 1px solid var(--basalt-border);
   border-radius: 0.8rem;
-  box-shadow: 0 8px 26px rgba(29, 65, 66, 0.07);
+  box-shadow: var(--basalt-shadow);
   object-fit: contain;
 }
 
@@ -418,7 +523,7 @@ figure:has(> .basalt-framework) figcaption {
 @media (max-width: 959px) {
   body,
   .bd-article {
-    font-size: 1.05rem;
+    font-size: 1rem;
   }
 
   .basalt-hero {

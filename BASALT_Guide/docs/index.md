@@ -18,6 +18,12 @@
 Version 1.2.2 improves environment reproducibility, model downloads, mainland-China installation, and documentation. Read the concise [release notes](release-notes.md#basalt-122) before updating an existing environment or resuming an older analysis.
 :::
 
+:::{admonition} Recent development improvements (ahead of the next tagged release)
+:class: note
+
+The external-binset route now supports full gap filling: after data feeding (`-d`) and dereplication (`-b`), run `BASALT -r BestBinset --module all` from the data-feeding output directory to continue through contig retrieval, secondary dereplication, restrained OLC, and reassembly. OLC verification is parallelized with a per-worker thread budget, CheckM2 evaluations are reused across convergence iterations via a content-keyed cache, and interrupted runs resume cleanly. See the [external-binset workflow](usage.md#external-binsets-staged-workflow) and the [unreleased notes](release-notes.md#unreleased).
+:::
+
 :::{admonition} New implementation: BASALT-Air v1.0.0
 :class: note
 

@@ -12,6 +12,9 @@ BASALT is a metagenomic workflow for recovering and refining metagenome-assemble
 > [!IMPORTANT]
 > **New: [BASALT-Air v1.0.0](https://github.com/PKU-EMBL/BASALT-Air) is now available.** BASALT-Air is the newer Pixi-based implementation for users who need absolute input paths, separate working and output directories, reproducible run manifests, and built-in dependency checks. Its executable is lowercase `basalt`, and its CLI and checkpoints are not interchangeable with the Conda-based BASALT documented in this repository.
 
+> [!NOTE]
+> **Recent development improvements (ahead of the next tagged release).** The external-binset route (`-d`/`-b`/`-r`) now reaches full gap filling — run `BASALT -r BestBinset --module all` from the data-feeding output directory to continue through contig retrieval, secondary dereplication, restrained OLC, and reassembly on both CheckM2 and legacy CheckM. The OLC verification stages are parallelized with a `-t`-derived per-worker thread budget, CheckM2 evaluations are reused across convergence iterations through a content-keyed cache, and interrupted runs resume cleanly: stale per-bin intermediates are discarded automatically and non-numeric checkpoint lines no longer reset progress. See the [external-binset workflow](BASALT_Guide/docs/usage.md#external-binsets-staged-workflow), [resume semantics](BASALT_Guide/docs/usage.md#resume-semantics), and [release notes](BASALT_Guide/docs/release-notes.md#unreleased).
+
 The published evaluation reports improved MAG recovery and downstream genome-resolved analyses relative to the tested workflows and datasets. These results define the evidence boundary: performance depends on community complexity, sequencing depth, assembly quality, read type, and the selected parameters. See the [Nature Communications article](https://doi.org/10.1038/s41467-024-46539-7) for the complete experimental design.
 
 ## Core advantage: coherent multi-assembly refinement
@@ -45,7 +48,8 @@ The [BASALT guide](https://basalt-guide.readthedocs.io/en/latest/) is the source
 | Compare individual and pooled assemblies | Run a biologically coherent multi-assembly pilot | [Study design patterns](BASALT_Guide/docs/study-design.md) |
 | Recover candidates with lower compute demand | `--sensitive quick --refinepara quick` | [Command-line reference](BASALT_Guide/docs/usage.md) |
 | Expand the candidate pool | `--sensitive sensitive` or `more-sensitive`; optionally add a validated binner | [Extra binners](BASALT_Guide/docs/extra-binners.md) |
-| Import bins from another workflow | Data feeding, then optional dereplication and refinement | [External-binset workflow](BASALT_Guide/docs/usage.md#external-binsets-staged-workflow) |
+| Import bins from another workflow | Data feeding (`-d`), dereplication (`-b`), then `-r BestBinset --module all` for refinement and gap filling | [External-binset workflow](BASALT_Guide/docs/usage.md#external-binsets-staged-workflow) |
+| Screen an existing binset only | `BASALT -r <binset> ...` without `--module` (checkpointed; continue later with `--module`) | [Command-line reference](BASALT_Guide/docs/usage.md) |
 | Resume an interrupted run | `BASALT --mode continue` in the unchanged run directory | [Resume semantics](BASALT_Guide/docs/usage.md#resume-semantics) |
 
 ### BASALT or BASALT-Air?
@@ -66,7 +70,7 @@ See the [BASALT-Air repository](https://github.com/PKU-EMBL/BASALT-Air) for its 
 1. **Autobinning.** BASALT runs MetaBAT 2 and SemiBin 2 across parameter settings. The `sensitive` and `more-sensitive` presets add CONCOCT, and `more-sensitive` also adds MaxBin 2.0.
 2. **Bin selection.** Candidate bins are compared within each assembly and then across assemblies to reduce redundancy.
 3. **Refinement.** A five-model multilayer-perceptron ensemble screens contigs using sequence-composition and coverage-derived features. Read connectivity is then used to retrieve candidate contigs.
-4. **Reassembly.** BASALT can reassemble and polish selected bins when the required read types are available.
+4. **Reassembly and gap filling.** Selected and redundant bins are reassembled and merged through restrained OLC when the required read types are available; this stage now also runs on external binsets through `-r ... --module all`, with parallel verification and content-cached CheckM2 evaluation.
 
 Optional adapters support MetaBinner (`-e m`), VAMB (`-e v`), and LorBin (`-e l`). Their installation and input requirements are documented separately in the [extra-binner guide](BASALT_Guide/docs/extra-binners.md).
 
