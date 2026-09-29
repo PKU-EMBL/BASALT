@@ -307,8 +307,8 @@ samp,
 /* Landing page */
 .basalt-hero {
   position: relative;
-  margin: 0 0 1.6rem;
-  padding: 2.5rem 2.6rem 2.05rem;
+  margin: 0 0 1.9rem;
+  padding: 2.7rem 2.6rem 2.2rem;
   overflow: hidden;
   background:
     radial-gradient(ellipse 60rem 26rem at 85% -12%, var(--pku-crimson-soft), transparent 60%),
@@ -336,7 +336,7 @@ samp,
 }
 
 .basalt-hero__eyebrow {
-  margin-bottom: 0;
+  margin: 0 0 1.05rem;
   color: var(--pku-crimson);
   font-family: var(--font-heading);
   font-size: 0.92rem !important;
@@ -347,6 +347,7 @@ samp,
 
 .basalt-hero__tagline {
   max-width: 47rem;
+  margin: 0 0 1.05rem;
   color: var(--basalt-ink);
   font-family: var(--font-heading);
   font-size: 1.32rem !important;
@@ -356,8 +357,10 @@ samp,
 
 .basalt-hero__summary {
   max-width: 48rem;
+  margin: 0 0 0.35rem;
   color: var(--basalt-muted);
   font-size: 1.05rem !important;
+  line-height: 1.65;
 }
 
 .basalt-hero__image {
@@ -379,7 +382,7 @@ samp,
 }
 
 .basalt-hero__actions {
-  margin: 1.3rem 0 0.9rem;
+  margin: 1.45rem 0 1.05rem;
 }
 
 .basalt-button {
